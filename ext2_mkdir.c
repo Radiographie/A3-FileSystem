@@ -15,6 +15,8 @@
 
 unsigned char *ptr_disk;
 
+int dir_exist(struct ext2_dir_entry_2 *dir_ptr, char *dir);
+
 int get_path_table(char *table_path[10], char *ptr_path)
 {
     char *work = strtok(ptr_path, "/");
