@@ -81,10 +81,12 @@ int dir_exist(struct ext2_dir_entry_2 *dir_ptr, char *dir)
 
 int get_free_block(unsigned char *bm_block, struct ext2_super_block *ptr_sb)
 {
-    for(int i = 0; i < (ptr_sb->s_blocks_count / 8); i++)
+    int i;
+    for(i = 0; i < (ptr_sb->s_blocks_count / 8); i++)
     {
         char c = *bm_block;
-        for (int j = 0; j < 8; j++)
+        int j;
+        for (j = 0; j < 8; j++)
         {
             if(!(c & (1 << j)))
             {
@@ -98,10 +100,12 @@ int get_free_block(unsigned char *bm_block, struct ext2_super_block *ptr_sb)
 
 int get_free_inode(unsigned char *bm_inode, struct ext2_super_block *ptr_sb)
 {
-    for (int i = 0; i < (ptr_sb->s_inodes_count / 8); i++)
+    int i;
+    for (i = 0; i < (ptr_sb->s_inodes_count / 8); i++)
     {
         char c = *bm_inode;
-        for (int j = 0; j < 8; j++)
+        int j;
+        for (j = 0; j < 8; j++)
         {
             if(!(c & (1 << j)))
             {
@@ -125,7 +129,8 @@ struct ext2_dir_entry_2 * get_free_space(struct ext2_inode *current_inode, int r
         data_block_num = current_inode -> i_block[i];
         ptr_dir = (void *)ptr_disk + EXT2_BLOCK_SIZE * data_block_num;
         
-        for (int size = 0; size < EXT2_BLOCK_SIZE;)
+        int size;
+        for (size = 0; size < EXT2_BLOCK_SIZE;)
         {
             size += ptr_dir -> rec_len;
             if(size == EXT2_BLOCK_SIZE &&
