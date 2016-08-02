@@ -257,7 +257,7 @@ int main(int argc, char **argv)
        exit(ENOENT);
     }
 
-    struct ext2_dir_entry_2 *new_dir = ptr_disk + EXT2_BLOCK_SIZE * (fr_bk + 1);
+    struct ext2_dir_entry_2 *new_dir = (struct ext2_dir_entry_2 *) (ptr_disk + EXT2_BLOCK_SIZE * (fr_bk + 1));
     create_directory(new_dir, fr_in , current_dir -> inode);
     SETBIT(bm_block, fr_bk);
 
