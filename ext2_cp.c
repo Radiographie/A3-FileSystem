@@ -211,9 +211,12 @@ int main(int argc, char **argv) {
         exit(1);
     }
     
+    // open the file in native filesystem
     int fd_src = open(argv[2], O_RDONLY);
     int filesize_src = lseek(fd_src, 0, SEEK_END);
     int req_block_num = (filesize_src - 1) / EXT2_BLOCK_SIZE + 1;
+
+    // open the disk image
     int fd = open(argv[1], O_RDWR);
 
     ptr_disk = mmap(NULL, BLOCK_NUM * BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -270,7 +273,7 @@ int main(int argc, char **argv) {
     if(req_block_num > 11)
     {
         block_id_inderect = get_free_block(bm_block, ptr_super_block);
-        int *indirect_block = ptr_disk + EXT2_BLOCK_SIZE * (block_id_inderect + 1);
+        int *indirect_block = (int *) (ptr_disk + EXT2_BLOCK_SIZE * (block_id_inderect + 1));
         SETBIT(bm_block, block_id_inderect);
         for(i = 12; i < req_block_num; i++)
         {
