@@ -54,22 +54,22 @@ int dir_exist(struct ext2_dir_entry_2 *dir_ptr, char *dir)
         }
         if (dir_ptr->inode != 2)
         {
-        	if (dir_ptr->inode != 11)
-        		{
-        			if (strncmp(dir_ptr->name, "..", 2) != 0)
-        				{
-        					if (strncmp(dir_ptr->name, ".", 1) != 0)
-	        				{
-	        					char *dir_name = malloc(sizeof(char *));
-	        					int len1 = dir_ptr -> name_len;
-				            strncpy(dir_name, dir_ptr -> name, len1);
-				            if(strcmp(dir_name, dir) == 0)
-				            {
-				                return dir_ptr -> inode;
-				            }
-	        				}
-        				}
-        		}
+            if (dir_ptr->inode != 11)
+                {
+                    if (strncmp(dir_ptr->name, "..", 2) != 0)
+                        {
+                            if (strncmp(dir_ptr->name, ".", 1) != 0)
+                            {
+                                char *dir_name = malloc(sizeof(char *));
+                                int len1 = dir_ptr -> name_len;
+                                strncpy(dir_name, dir_ptr -> name, len1);
+                            if(strcmp(dir_name, dir) == 0)
+                            {
+                                return dir_ptr -> inode;
+                            }
+                            }
+                        }
+                }
             
         }
         dir_entry_size += dir_ptr->rec_len;
@@ -153,14 +153,14 @@ struct ext2_dir_entry_2 * get_free_space(struct ext2_inode *current_inode, int r
 struct ext2_dir_entry_2 * recurse_inode(struct ext2_inode *inode_ptr, char *path_array[10],
                                         int path_array_len, int index, int bg_inode_table)
 {
-    int block_id;
+    int block_id;   // to record the number of used block
     if(path_array_len == 1)
-    {
+    {   // case: path is the root path
         int i = 0;
         while(i < 11)
         {
             if (inode_ptr->i_block[i] > 0)
-            {
+            {   // the block is in use
                 block_id = inode_ptr->i_block[i];
                 struct ext2_dir_entry_2 *ptr_dir = (struct ext2_dir_entry_2 *)(ptr_disk + EXT2_BLOCK_SIZE * block_id);
                 return ptr_dir;
@@ -173,13 +173,15 @@ struct ext2_dir_entry_2 * recurse_inode(struct ext2_inode *inode_ptr, char *path
     int i  = 0;
     while (i < 12)
     {
-        if (inode_ptr->i_block[i ] > 0)
+        if (inode_ptr->i_block[i] > 0)
         {
             block_id = inode_ptr->i_block[i];
             struct ext2_dir_entry_2 *ptr_dir = (struct ext2_dir_entry_2 *)(ptr_disk + EXT2_BLOCK_SIZE * block_id);
+
+            // check if the dir exists and find its inode number
             int dir_inode_ptr = dir_exist(ptr_dir, path_array[index]);
             if(dir_inode_ptr != 0)
-            {
+            {   // case: the dir exists
                 if(path_array_len - index == 2)
                 {
                     struct ext2_inode *inode_ptr2 = (struct ext2_inode *)(ptr_disk + EXT2_BLOCK_SIZE * bg_inode_table);
@@ -211,14 +213,30 @@ int main(int argc, char **argv) {
         exit(1);
     }
     
-    // open the file in native filesystem
+    // open source file
     int fd_src = open(argv[2], O_RDONLY);
+    if (fd_src < 0){
+        fprintf(stderr, "No such file exists in the native file system \n");
+        exit(ENOENT);
+    }
+
     int filesize_src = lseek(fd_src, 0, SEEK_END);
+    // mmap cannot map size 0 file.
+    if (filesize_src <= 0){
+        fprintf(stderr, "The source file is empty \n");
+        exit(ENOENT);
+    }
+
     int req_block_num = (filesize_src - 1) / EXT2_BLOCK_SIZE + 1;
 
-    // open the disk image
+    // open the image
     int fd = open(argv[1], O_RDWR);
+    if (fd < 0){
+        fprintf(stderr, "No such virtual disk exists \n");
+        exit(ENOENT);   
+    }
 
+    // map the virtual disk and source file on memory
     ptr_disk = mmap(NULL, BLOCK_NUM * BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     unsigned char* ptr_disk_src = mmap(NULL, filesize_src, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd_src, 0);
     if (ptr_disk == MAP_FAILED || ptr_disk_src == MAP_FAILED)
@@ -228,6 +246,7 @@ int main(int argc, char **argv) {
     }
 
     struct ext2_group_desc *ptr_group_desc = (struct ext2_group_desc *)(ptr_disk + EXT2_SB_OFFSET + EXT2_BLOCK_SIZE);
+    // get the inode table
     struct ext2_inode *ptr_inode = (struct ext2_inode *)(ptr_disk + EXT2_BLOCK_SIZE * ptr_group_desc->bg_inode_table);
     unsigned char *bm_inode = (ptr_disk + (ptr_group_desc -> bg_inode_bitmap) * BLOCK_SIZE);
     unsigned char *bm_block = (ptr_disk + (ptr_group_desc -> bg_block_bitmap) * BLOCK_SIZE);
@@ -239,15 +258,16 @@ int main(int argc, char **argv) {
     int count_path_src = get_path_table(table_path_src, ptr_path_src);
     int count_path_dest = get_path_table(table_path_dest, ptr_path_dest);
 
+    // Find the destination directory in the virtual disk
     struct ext2_dir_entry_2 *ptr_dir_dest = recurse_inode(ptr_inode + 1, table_path_dest, count_path_dest, 0, ptr_group_desc->bg_inode_table);
 
     if(ptr_dir_dest == 0)
     {
-        printf("No such directory exists\n");
+        printf("No such directory exists on virtual disk\n");
         return -1;
     }
 
-    int *table_new_block[req_block_num];
+    int table_new_block[req_block_num];
     int copy_flag = 0;
 
     int i = 0;
@@ -273,7 +293,7 @@ int main(int argc, char **argv) {
     if(req_block_num > 11)
     {
         block_id_inderect = get_free_block(bm_block, ptr_super_block);
-        int *indirect_block = (int *) (ptr_disk + EXT2_BLOCK_SIZE * (block_id_inderect + 1));
+        int *indirect_block = (int *)(ptr_disk + EXT2_BLOCK_SIZE * (block_id_inderect + 1));
         SETBIT(bm_block, block_id_inderect);
         for(i = 12; i < req_block_num; i++)
         {

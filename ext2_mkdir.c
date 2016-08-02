@@ -221,6 +221,10 @@ int main(int argc, char **argv)
         exit(1);
     }
     int fd = open(argv[1], O_RDWR);
+    if (fd < 0){
+        fprintf(stderr, "No such virtual disk exists \n");
+        exit(1);   
+    }
 
     ptr_disk = mmap(NULL, 128 * BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr_disk == MAP_FAILED) {
