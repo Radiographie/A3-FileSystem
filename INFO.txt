@@ -1,0 +1,44 @@
+Names: Jiawei Zhao, Xin Li.
+CDF ID: g4zhaoji, c6lixin.
+svn revision #:
+
+***************
+	README		
+***************
+	
+	Instructions to use:
+
+	1. Please type "make" in the terminal to compile all programs.
+	   	Note: Makefile is already written.
+	2. After compiling, type the name of the excutables in the terminal to run the program.
+		For example, "ext2_ls emptydisk.img ./"
+	3. Please use each command as described below:
+		* ext2_ls: 
+			Usage: ext2_ls <image file name> <path name>
+
+		* ext2_cp:
+			Usage: ext2_cp <readimg> <image file name> <filepath>
+			NOTE: please do not include "./" in the filepath as an absolute path.
+
+		* ext2_mkdir:
+			Usage: ext2_mkdir <readimg> <image file name> <filepath>
+			NOTE: please do not include "./" in the filepath as an absolute path.
+
+		* ext2_rm:
+			Usage: ext2_rm <image file name> <file path name>
+
+		* ext2_ln:
+			Usage: ext2_ln <readimg> <image file name> <filepath>
+			NOTE: please do not include "./" in the filepath as an absolute path.
+
+
+********************
+	EXPLAINATIOIN
+********************
+	
+	The programs are implemented as required, but with minor missing details:
+		* flags are not implemented, eg. "-a" flag in ext2_ls, instead, the program will print "." and ".." as default.
+		* "-r" flag of "ext2_rm" is not implemented.
+		* directories and files could have same names.
+		* "rm" cannot remove directories including "." and "..".
+		* "ls" cannot accept file as an argument.
